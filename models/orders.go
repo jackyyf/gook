@@ -12,11 +12,20 @@ import (
 type OrderStatus int
 
 const (
-	STAT_NEW    OrderStatus = iota
-	STAT_PAID   OrderStatus = iota
-	STAT_DONE   OrderStatus = iota
+	STAT_NEW    OrderStatus = 0
+	STAT_PAID   OrderStatus = 1
+	STAT_DONE   OrderStatus = 2
 	STAT_CANCEL OrderStatus = -1
 )
+
+type _status struct {
+	STAT_NEW    OrderStatus
+	STAT_PAID   OrderStatus
+	STAT_DONE   OrderStatus
+	STAT_CANCEL OrderStatus
+}
+
+var Status = _status{STAT_NEW: STAT_NEW, STAT_PAID: STAT_PAID, STAT_DONE: STAT_DONE, STAT_CANCEL: STAT_CANCEL}
 
 func (s OrderStatus) String() string {
 	if s == STAT_NEW {
@@ -255,8 +264,9 @@ func (order *OrderOut) Create() (err error) {
 	return
 }
 
-func GetOrderIn(book *Book) (ret []OrderIn, err error) {
-	query := `SELECT id, book, amount, price, b.name, b.author, b.publisher, b.isbn, b.price, status, billref, bill.amount, bill.created FROM orderin
+func GetOrderIns(book *Book) (ret []OrderIn, err error) {
+	query := `SELECT orderin.id, orderin.book, orderin.amount, orderin.price, b.name, b.author, b.publisher, b.isbn,
+	b.price, status, billref, bill.amount, bill.created FROM orderin
 	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref`
 	if book != nil {
 		query += fmt.Sprintf(" WHERE book=%d", book.ID())
@@ -275,9 +285,9 @@ func GetOrderIn(book *Book) (ret []OrderIn, err error) {
 		cur.Book = new(Book)
 		bill := sql.NullInt64{}
 		bamount := sql.NullFloat64{}
-		bcreated := time.Time{}
-		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Publisher,
-			&cur.Book.ISBN, &cur.Book.Price, &cur.Status, &bill, &bamount, &bcreated)
+		bcreated := new(time.Time)
+		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Author,
+			&cur.Book.Publisher, &cur.Book.ISBN, &cur.Book.Price, &cur.Status, &bill, &bamount, &bcreated)
 		if err != nil {
 			log.Alert("Error when fetching row %d: %s", idx, err)
 			return nil, err
@@ -296,7 +306,7 @@ func GetOrderIn(book *Book) (ret []OrderIn, err error) {
 				return nil, err
 			}
 			cur.BillRef.Amount = amount.(float64)
-			cur.BillRef.Created = bcreated
+			cur.BillRef.Created = *bcreated
 		} else {
 			cur.BillRef = nil
 		}
@@ -304,8 +314,49 @@ func GetOrderIn(book *Book) (ret []OrderIn, err error) {
 	return ret[:idx], nil
 }
 
+func GetOrderIn(id int32) (ret *OrderIn, err error) {
+	res := db.QueryRow(`SELECT orderin.id, orderin.book, orderin.amount, orderin.price, b.name, b.author, b.publisher, b.isbn,
+	b.price, status, billref, bill.amount, bill.created FROM orderin
+	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref WHERE orderin.id=$1`, id)
+	ret = new(OrderIn)
+	ret.Book = new(Book)
+	bill := sql.NullInt64{}
+	bamount := sql.NullFloat64{}
+	bcreated := new(time.Time)
+	err = res.Scan(&ret.id, &ret.Book.id, &ret.Amount, &ret.Price, &ret.Book.Name, &ret.Book.Author,
+		&ret.Book.Publisher, &ret.Book.ISBN, &ret.Book.Price, &ret.Status, &bill, &bamount, &bcreated)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Warn("No such order: %d", id)
+			return nil, nil
+		}
+		log.Alert("Error when fetching row: %s", err)
+		return nil, err
+	}
+	if bill.Valid {
+		ret.BillRef = new(Bill)
+		id, err := bill.Value()
+		if err != nil {
+			log.Alert("Error when fetching row: %s", err)
+			return nil, err
+		}
+		ret.BillRef.id = id.(int32)
+		amount, err := bamount.Value()
+		if err != nil {
+			log.Alert("Error when fetching row: %s", err)
+			return nil, err
+		}
+		ret.BillRef.Amount = amount.(float64)
+		ret.BillRef.Created = *bcreated
+	} else {
+		ret.BillRef = nil
+	}
+	return
+}
+
 func GetOrderOut(book *Book) (ret []OrderIn, err error) {
-	query := `SELECT id, book, amount, price, b.name, b.author, b.publisher, b.isbn, b.price, billref, bill.amount, bill.created FROM orderout
+	query := `SELECT orderout.id, orderout.book, amount, price, b.name, b.author, b.publisher, b.isbn,
+	b.price, billref, bill.amount, bill.created FROM orderout
 	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref`
 	if book != nil {
 		query += fmt.Sprintf(" WHERE book=%d", book.ID())
@@ -323,8 +374,8 @@ func GetOrderOut(book *Book) (ret []OrderIn, err error) {
 		cur := &ret[idx]
 		cur.Book = new(Book)
 		cur.BillRef = new(Bill)
-		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Publisher,
-			&cur.Book.ISBN, &cur.Book.Price, &cur.BillRef.id, &cur.BillRef.Amount, &cur.BillRef.Created)
+		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Author,
+			&cur.Book.Publisher, &cur.Book.ISBN, &cur.Book.Price, &cur.BillRef.id, &cur.BillRef.Amount, &cur.BillRef.Created)
 		if err != nil {
 			log.Alert("Error when fetching row %d: %s", idx, err)
 			return nil, err

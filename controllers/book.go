@@ -170,7 +170,7 @@ func (c *BookController) Buy() {
 			c.Redirect(fmt.Sprintf("/book/buy/%d", id), 302)
 			return
 		}
-		book.Amount = amount
+		order.Amount = amount
 		err = order.Create()
 		if err != nil {
 			c.SetSession("errmsg", err.Error())
