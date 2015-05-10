@@ -1,10 +1,11 @@
 package routers
 
 import (
-	"github.com/jackyyf/gook/controllers"
 	"github.com/astaxie/beego"
+	c "github.com/jackyyf/gook/controllers"
 )
 
 func init() {
-    beego.Router("/", &controllers.MainController{})
+	beego.Router("/", &c.IndexController{})
+	beego.AutoRouter(&c.UserController{})
 }
