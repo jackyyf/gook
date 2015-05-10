@@ -26,3 +26,19 @@ footer {
     margin: 50px 0;
     text-align: center;
 }
+
+.prev, .next, .day, .datepicker-switch, .month, .year {
+	color: black;
+}
+
+.form-control {
+	margin-bottom: 15px;
+}
+
+.control-label {
+	margin-top: 10px;
+}
+
+.left5 {
+	margin-left: 5px;
+}

@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/jackyyf/gook/db"
 	"github.com/jackyyf/gook/utils/log"
 	"time"
@@ -37,18 +36,18 @@ func (b *Bill) Create(tx *sql.Tx) (err error) {
 	return
 }
 
-func GetBillsAfter(t time.Time, offset, length int) (bills []Bill, err error) {
+func GetBillsAfter(t time.Time) (bills []Bill, err error) {
 	rows, err := db.Query(
-		fmt.Sprintf(`SELECT id, amount, created, "in". FROM "bill"	WHERE created > $1 OFFSET %d LIMIT %d`, offset, length),
-		t)
+		`SELECT id, amount, created, "in". FROM "bill"	WHERE created >= $1`, t)
 	if err != nil {
 		log.Alert("Error occured when searching bills: %s", err)
 		return
 	}
 	defer rows.Close()
-	bills = make([]Bill, length)
+	bills = make([]Bill, 0, 30)
 	idx := 0
 	for ; rows.Next(); idx++ {
+		bills = append(bills, Bill{})
 		cur := &bills[idx]
 		err = rows.Scan(&cur.id, &cur.Amount, &cur.Created)
 		if err != nil {
@@ -61,7 +60,7 @@ func GetBillsAfter(t time.Time, offset, length int) (bills []Bill, err error) {
 
 func GetSummaryAfter(t time.Time) (in, out float64, err error) {
 	rows, err := db.Query(`SELECT sum(amount) AS total FROM "bill"
-		WHERE created > $1 GROUP BY amount > 0`, t)
+		WHERE created >= $1 GROUP BY amount > 0`, t)
 	if err != nil {
 		log.Alert("Error occured when calculating bill summary: %s", err)
 		return
@@ -82,3 +81,17 @@ func GetSummaryAfter(t time.Time) (in, out float64, err error) {
 	}
 	return
 }
+
+/*
+
+DB Creation SQL:
+
+DROP TABLE IF EXISTS "bill";
+
+CREATE TABLE "bill" (
+	id serial PRIMARY KEY,
+	amount decimal(9,2) NOT NULL,
+	created timestamptz NOT NULL
+);
+
+*/

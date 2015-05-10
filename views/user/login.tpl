@@ -58,7 +58,7 @@
                                     <input class="form-control" placeholder="Password" name="password" type="password" value="">
                                 </div>
                                 <!-- Change this to a button or input when using this as a form -->
-                                <a href="#" class="btn btn-success btn-block" onclick="$('#login-form').submit()">Login</a>
+                                <input type="submit" href="#" class="btn btn-success btn-block" value="Login">
                             </fieldset>
                         </form>
                     </div>

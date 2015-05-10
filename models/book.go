@@ -51,8 +51,8 @@ func (me *Book) Save() (err error) {
 		return
 	}
 	res, err := db.Exec(
-		`UPDATE "book" SET isbn=$1, name=$2, publisher=$3, author=$4, price=$5, amount=$6`,
-		me.ISBN, me.Name, me.Publisher, me.Author, me.Price, me.Amount)
+		`UPDATE "book" SET isbn=$1, name=$2, publisher=$3, author=$4, price=$5, amount=$6 WHERE id=$7`,
+		me.ISBN, me.Name, me.Publisher, me.Author, me.Price, me.Amount, me.id)
 	if err != nil {
 		log.Error("Commit book changes failed: %s", err)
 		return err
@@ -86,14 +86,14 @@ func (me *Book) Delete() (err error) {
 
 func GetBook(id int32) (ret *Book, err error) {
 	row := db.QueryRow(
-		`SELECT id, isbn, name, publisher, author, price, amount FROM "book" WHERE id=$1 LIMIT 0,1`,
+		`SELECT id, isbn, name, publisher, author, price, amount FROM "book" WHERE id=$1 LIMIT 1`,
 		id)
 	ret = new(Book)
-	if err := row.Scan(&ret.ISBN, &ret.Name, &ret.Publisher, &ret.Author,
+	if err := row.Scan(&ret.id, &ret.ISBN, &ret.Name, &ret.Publisher, &ret.Author,
 		&ret.Price, &ret.Amount); err != nil {
 		if err == sql.ErrNoRows {
 			log.Warn("Book(ID=%d) not exists.", id)
-			return nil, err
+			return nil, nil
 		} else {
 			log.Alert("Unknown error when fetching book(ID=%d): %s", id, err)
 			return nil, err
@@ -170,7 +170,13 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 			}
 		}
 	}
-	limit_phase := fmt.Sprintf(" ORDER BY \"id\" DESC OFFSET %d LIMIT %d", offset, length)
+	limit_phase := " ORDER BY \"id\" DESC"
+	if offset >= 0 {
+		limit_phase += fmt.Sprintf(" OFFSET %d", offset)
+	}
+	if length > 0 {
+		limit_phase += fmt.Sprintf(" LIMIT %d", length)
+	}
 	query += where_phase + limit_phase
 	rows, err := db.Query(query, arg_list...)
 	if err != nil {
@@ -178,9 +184,14 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 		return nil, err
 	}
 	defer rows.Close()
-	ret = make([]Book, length)
+	if length > 0 {
+		ret = make([]Book, 0, length)
+	} else {
+		ret = make([]Book, 0, 30)
+	}
 	idx := 0
 	for ; rows.Next(); idx++ {
+		ret = append(ret, Book{})
 		cur := &ret[idx]
 		err = rows.Scan(&cur.id, &cur.ISBN, &cur.Name, &cur.Publisher,
 			&cur.Author, &cur.Price, &cur.Amount)

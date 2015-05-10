@@ -1,10 +1,12 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
-	// "fmt"
+	"fmt"
 	"github.com/jackyyf/gook/db"
 	"github.com/jackyyf/gook/utils/log"
+	"time"
 )
 
 type OrderStatus int
@@ -23,6 +25,8 @@ func (s OrderStatus) String() string {
 		return "Paid"
 	} else if s == STAT_DONE {
 		return "Done"
+	} else if s == STAT_CANCEL {
+		return "Cancelled"
 	} else {
 		return "UNKNOWN_STATUS"
 	}
@@ -111,15 +115,20 @@ func (order *OrderIn) Pay(bill *Bill) (err error) {
 		log.Alert(err.Error())
 		return
 	}
-	if bill == nil {
-		err = errors.New("Error: nil bill")
-		log.Alert(err.Error())
-		return
-	}
 	tx, err := db.Transaction()
 	if err != nil {
 		log.Crit("Unable to create transaction: %s", err)
 		return
+	}
+	if bill == nil {
+		order.BillRef = new(Bill)
+		order.BillRef.Amount = float64(order.Amount) * order.Price
+		err = order.BillRef.Create(tx)
+		if err != nil {
+			log.Error("Create bill failed: %s", err)
+			tx.Rollback()
+			return
+		}
 	}
 	err = bill.Create(tx)
 	if err != nil {
@@ -205,15 +214,20 @@ func (order *OrderOut) Create() (err error) {
 		log.Alert(err.Error())
 		return
 	}
-	if order.BillRef == nil {
-		err = errors.New("Error: no bill ref set.")
-		log.Alert(err.Error())
-		return
-	}
 	tx, err := db.Transaction()
 	if err != nil {
 		log.Crit("Unable to create transaction: %s", err)
 		return
+	}
+	if order.BillRef == nil {
+		order.BillRef = new(Bill)
+		order.BillRef.Amount = float64(order.Amount) * order.Price
+		err = order.BillRef.Create(tx)
+		if err != nil {
+			log.Error("Create bill failed: %s", err)
+			tx.Rollback()
+			return
+		}
 	}
 	err = tx.QueryRow(
 		`INSERT INTO "orderout" (book, amount, price, billref) VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -240,3 +254,107 @@ func (order *OrderOut) Create() (err error) {
 	}
 	return
 }
+
+func GetOrderIn(book *Book) (ret []OrderIn, err error) {
+	query := `SELECT id, book, amount, price, b.name, b.author, b.publisher, b.isbn, b.price, status, billref, bill.amount, bill.created FROM orderin
+	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref`
+	if book != nil {
+		query += fmt.Sprintf(" WHERE book=%d", book.ID())
+	}
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Alert("Error occured while searching books: %s", err)
+		return nil, err
+	}
+	defer rows.Close()
+	ret = make([]OrderIn, 0, 30)
+	idx := 0
+	for ; rows.Next(); idx++ {
+		ret = append(ret, OrderIn{})
+		cur := &ret[idx]
+		cur.Book = new(Book)
+		bill := sql.NullInt64{}
+		bamount := sql.NullFloat64{}
+		bcreated := time.Time{}
+		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Publisher,
+			&cur.Book.ISBN, &cur.Book.Price, &cur.Status, &bill, &bamount, &bcreated)
+		if err != nil {
+			log.Alert("Error when fetching row %d: %s", idx, err)
+			return nil, err
+		}
+		if bill.Valid {
+			cur.BillRef = new(Bill)
+			id, err := bill.Value()
+			if err != nil {
+				log.Alert("Error when fetching row %d: %s", idx, err)
+				return nil, err
+			}
+			cur.BillRef.id = id.(int32)
+			amount, err := bamount.Value()
+			if err != nil {
+				log.Alert("Error when fetching row %d: %s", idx, err)
+				return nil, err
+			}
+			cur.BillRef.Amount = amount.(float64)
+			cur.BillRef.Created = bcreated
+		} else {
+			cur.BillRef = nil
+		}
+	}
+	return ret[:idx], nil
+}
+
+func GetOrderOut(book *Book) (ret []OrderIn, err error) {
+	query := `SELECT id, book, amount, price, b.name, b.author, b.publisher, b.isbn, b.price, billref, bill.amount, bill.created FROM orderout
+	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref`
+	if book != nil {
+		query += fmt.Sprintf(" WHERE book=%d", book.ID())
+	}
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Alert("Error occured while searching books: %s", err)
+		return nil, err
+	}
+	defer rows.Close()
+	ret = make([]OrderIn, 0, 30)
+	idx := 0
+	for ; rows.Next(); idx++ {
+		ret = append(ret, OrderIn{})
+		cur := &ret[idx]
+		cur.Book = new(Book)
+		cur.BillRef = new(Bill)
+		var err = rows.Scan(&cur.id, &cur.Book.id, &cur.Amount, &cur.Price, &cur.Book.Name, &cur.Book.Publisher,
+			&cur.Book.ISBN, &cur.Book.Price, &cur.BillRef.id, &cur.BillRef.Amount, &cur.BillRef.Created)
+		if err != nil {
+			log.Alert("Error when fetching row %d: %s", idx, err)
+			return nil, err
+		}
+	}
+	return ret[:idx], nil
+}
+
+/*
+
+DB Creation SQL:
+
+DROP TABLE IF EXISTS "orderin";
+DROP TABLE IF EXISTS "orderout";
+
+CREATE TABLE "orderin" (
+	id serial PRIMARY KEY,
+	book integer NOT NULL UNIQUE REFERENCES book,
+	amount integer NOT NULL,
+	price decimal(9,2) NOT NULL,
+	status integer NOT NULL DEFAULT 0,
+	billref integer NULL UNIQUE REFERENCES bill
+);
+
+CREATE TABLE "orderout" (
+	id serial PRIMARY KEY,
+	book integer NOT NULL UNIQUE REFERENCES book,
+	amount integer NOT NULL,
+	price decimal(9,2) NOT NULL,
+	billref integer NOT NULL UNIQUE REFERENCES bill
+);
+
+*/

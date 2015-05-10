@@ -8,4 +8,6 @@ import (
 func init() {
 	beego.Router("/", &c.IndexController{})
 	beego.AutoRouter(&c.UserController{})
+	beego.AutoRouter(&c.BookController{})
+	beego.AutoRouter(&c.OrderInController{})
 }

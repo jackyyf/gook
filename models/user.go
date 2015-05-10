@@ -15,7 +15,7 @@ type User struct {
 	hashed_pwd string
 	Name       string
 	RealName   string
-	Sex        bool
+	Gender     int32
 	Born       time.Time
 	admin      bool
 }
@@ -59,9 +59,9 @@ func (me *User) Create() (err error) {
 		return
 	}
 	err = db.QueryRow(
-		`INSERT INTO "user" (name, pwd, realname, sex, born, admin) VALUES
-		($1, $2, $3, $4, $5, FALSE) RETURNING id`,
-		me.Name, me.hashed_pwd, me.RealName, me.Sex, me.Born).Scan(&(me.id))
+		`INSERT INTO "user" (name, pwd, realname, gender, born, admin) VALUES
+		($1, $2, $3, $4, $5, $6) RETURNING id`,
+		me.Name, me.hashed_pwd, me.RealName, me.Gender, me.Born, me.admin).Scan(&(me.id))
 	if err != nil {
 		log.Error("Create user failed: %s", err)
 		return
@@ -77,8 +77,8 @@ func (me *User) Save() (err error) {
 		return
 	}
 	res, err := db.Exec(
-		`UPDATE "user" SET name=$1, pwd=$2, realname=$3, sex=$4, born=$5, admin=$6 WHERE id=$7`,
-		me.Name, me.hashed_pwd, me.RealName, me.Sex, me.Born, me.admin, me.id)
+		`UPDATE "user" SET name=$1, pwd=$2, realname=$3, gender=$4, born=$5, admin=$6 WHERE id=$7`,
+		me.Name, me.hashed_pwd, me.RealName, me.Gender, me.Born, me.admin, me.id)
 	if err != nil {
 		log.Error("Commit user changes failed: %s", err)
 		return err
@@ -112,10 +112,10 @@ func (me *User) Delete() (err error) {
 
 func GetUser(id int32) (ret *User, err error) {
 	row := db.QueryRow(
-		`SELECT id, name, pwd, realname, sex, born, admin FROM "user" WHERE id=$1 LIMIT 1`,
+		`SELECT id, name, pwd, realname, gender, born, admin FROM "user" WHERE id=$1 LIMIT 1`,
 		id)
 	ret = new(User)
-	if err := row.Scan(&ret.id, &ret.Name, &ret.hashed_pwd, &ret.RealName, &ret.Sex,
+	if err := row.Scan(&ret.id, &ret.Name, &ret.hashed_pwd, &ret.RealName, &ret.Gender,
 		&ret.Born, &ret.admin); err != nil {
 		if err == sql.ErrNoRows {
 			log.Warn("User(ID=%d) not exists.", id)
@@ -131,10 +131,10 @@ func GetUser(id int32) (ret *User, err error) {
 
 func GetUserByName(name string) (ret *User, err error) {
 	row := db.QueryRow(
-		`SELECT id, name, pwd, realname, sex, born, admin FROM "user" WHERE name=$1 LIMIT 1`,
+		`SELECT id, name, pwd, realname, gender, born, admin FROM "user" WHERE name=$1 LIMIT 1`,
 		name)
 	ret = new(User)
-	if err := row.Scan(&ret.id, &ret.Name, &ret.hashed_pwd, &ret.RealName, &ret.Sex,
+	if err := row.Scan(&ret.id, &ret.Name, &ret.hashed_pwd, &ret.RealName, &ret.Gender,
 		&ret.Born, &ret.admin); err != nil {
 		if err == sql.ErrNoRows {
 			log.Warn("User(name=%s) not exists.", name)
@@ -203,7 +203,7 @@ CREATE TABLE "user" (
 	name varchar(255) NOT NULL UNIQUE,
 	pwd varchar(128),
 	realname varchar(255) NOT NULL,
-	sex boolean,
+	gender integer,
 	born timestamptz,
 	admin boolean
 );
