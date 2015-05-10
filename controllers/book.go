@@ -5,6 +5,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/jackyyf/gook/models"
 	"github.com/jackyyf/gook/utils/isbn"
+	"regexp"
 	"strconv"
 )
 
@@ -13,6 +14,8 @@ type BookController struct {
 }
 
 const PAGE_SIZE int = 30
+
+var SplitSpace = regexp.MustCompile("\\s+")
 
 func (c *BookController) List() {
 	c.TplNames = "book/list.tpl"
@@ -234,6 +237,7 @@ func (c *BookController) Sell() {
 			c.Redirect(fmt.Sprintf("/book/sell/%d", id), 302)
 			return
 		}
+		order.Price = book.Price
 		order.Amount = amount
 		err = order.Create()
 		if err != nil {
@@ -315,39 +319,25 @@ func (c *BookController) Edit() {
 	c.Redirect(fmt.Sprintf("/book/info/%d", id), 302)
 }
 
-/*
-
-func (c *BookController) Delete() {
-	sid, ok := c.Ctx.Input.Params["0"]
-	id := 0
-	var err error
-	if !ok {
-		c.Redirect("/book/list", 302)
-		c.SetSession("errmsg", "Invalid Book ID")
-		return
-	} else {
-		id, err = strconv.Atoi(sid)
-		if err != nil {
-			c.Redirect("/book/list", 302)
-			c.SetSession("errmsg", "Invalid Book ID")
-			return
-		}
+func (c *BookController) Search() {
+	c.TplNames = "book/list.tpl"
+	errmsg, ok := c.GetSession("errmsg").(string)
+	if ok && errmsg != "" {
+		c.Data["errmsg"] = errmsg
 	}
-	book, err := models.GetBook(int32(id))
+	c.DelSession("errmsg")
+	title := c.GetString("title")
+	publisher := c.GetString("publisher")
+	author := c.GetString("author")
+	Isbn := isbn.Normalize(c.GetString("isbn"))
+	books, err := models.SearchBooks(Isbn, SplitSpace.Split(title, -1), SplitSpace.Split(publisher, -1), SplitSpace.Split(author, -1), -1, -1)
 	if err != nil {
 		c.Data["content"] = err.Error()
 		c.Abort("500")
 	}
-	if book == nil {
-		c.Redirect("/book/list", 302)
-		c.SetSession("errmsg", fmt.Sprintf("Book ID %d does not exist!", id))
-		return
-	}
-	err = book.Delete()
-	if err != nil {
-		c.SetSession("errmsg", err.Error())
-	}
-	c.Redirect("/book/list", 302)
+	c.Data["title"] = title
+	c.Data["publisher"] = publisher
+	c.Data["author"] = author
+	c.Data["isbn"] = Isbn
+	c.Data["books"] = books
 }
-
-*/

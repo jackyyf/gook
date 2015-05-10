@@ -33,7 +33,7 @@
           <li><a href="/user/me">Welcome, {{.user.Name}}</a></li>
           <li><a href="/user/logout">Logout</a></li>
           {{if .user.IsAdmin}}
-          <li><a href="/admin/">Admin</a></li>
+          <li><a href="/admin/list">Admin</a></li>
           {{end}}
         </ul>
       </div>
@@ -52,16 +52,16 @@
           <div class="row">
             <form method="get" action="/book/search">
               <div class="col-sm-2">
-                <input class="form-control" placeholder="ISBN" name="isbn" type="text">
+                <input class="form-control" placeholder="ISBN" name="isbn" type="text" value="{{.isbn}}">
               </div>
               <div class="col-sm-3">
-                <input class="form-control" placeholder="Book Title" name="title" type="text">
+                <input class="form-control" placeholder="Book Title" name="title" type="text" value="{{.title}}">
               </div>
               <div class="col-sm-3">
-                <input class="form-control" placeholder="Author" name="author" type="text">
+                <input class="form-control" placeholder="Author" name="author" type="text" value="{{.author}}">
               </div>
               <div class="col-sm-3">
-                <input class="form-control" placeholder="Publisher" name="publisher" type="text">
+                <input class="form-control" placeholder="Publisher" name="publisher" type="text" value="{{.publisher}}">
               </div>
               <div class="col-sm-1" style="padding-right: 5px;">
                 <input class="btn btn-info" type="submit" value="Search">

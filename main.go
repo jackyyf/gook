@@ -10,6 +10,6 @@ import (
 func main() {
 	beego.InsertFilter("", beego.BeforeRouter, LoginEnforcement)
 	beego.InsertFilter("*", beego.BeforeRouter, LoginEnforcement)
-	beego.InsertFilter("/admin/*", beego.BeforeRouter, AdminProtection)
+	beego.InsertFilter("/admin*", beego.BeforeRouter, AdminProtection)
 	beego.Run()
 }

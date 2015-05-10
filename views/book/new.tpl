@@ -29,7 +29,7 @@
           <li><a href="/user/me">Welcome, {{.user.Name}}</a></li>
           <li><a href="/user/logout">Logout</a></li>
           {{if .user.IsAdmin}}
-          <li><a href="/admin/">Admin</a></li>
+          <li><a href="/admin/list">Admin</a></li>
           {{end}}
         </ul>
       </div>
@@ -54,36 +54,58 @@
               <div class="form-group">
                 <label for="book-title" class="col-md-2 control-label">Title</label>
                 <div class="col-md-10">
-                  <input class="form-control" placeholder="Title" name="title" type="text" value="" id="book-title">
+                  <input class="form-control fillk" placeholder="Title" id="title-input" name="title" type="text" value="" id="book-title">
                 </div>
               </div>
               <div class="form-group">
                 <label for="book-isbn" class="col-md-2 control-label">ISBN</label>
-                <div class="col-md-10">
-                  <input class="form-control" placeholder="ISBN" name="isbn" type="text" value="" id="book-isbn">
+                <div class="col-md-8">
+                  <input class="form-control fillk" placeholder="ISBN" id="isbn-input" name="isbn" type="text" value="" id="book-isbn">
                 </div>
+                <button class="btn btn-success col-md-2 fillk" id="autofill-button">Autofill!</button>
+                <div style="clear: both"></div>
               </div>
               <div class="form-group">
                 <label for="book-publisher" class="col-md-2 control-label">Publisher</label>
                 <div class="col-md-10">
-                  <input class="form-control" placeholder="Publisher" name="publisher" type="text" value="" id="book-publisher">
+                  <input class="form-control fillk" placeholder="Publisher" id="publisher-input" name="publisher" type="text" value="" id="book-publisher">
                 </div>
               </div>
               <div class="form-group">
                 <label for="book-author" class="col-md-2 control-label">Author</label>
                 <div class="col-md-10">
-                  <input class="form-control" placeholder="Author" name="author" type="text" value="" id="book-author">
+                  <input class="form-control fillk" placeholder="Author" id="author-input" name="author" type="text" value="" id="book-author">
                 </div>
               </div>
               <div class="form-group">
                 <label for="book-price" class="col-md-2 control-label">Price</label>
                 <div class="col-md-10">
-                  <input class="form-control" placeholder="Price" name="price" type="text" value='' id="book-price">
+                  <input class="form-control fillk" placeholder="Price" id="price-input" name="price" type="text" value='' id="book-price">
                 </div>
               </div>
               <input type="submit" class="btn btn-success btn-block" value="Create Book">
           </fieldset>
         </form>
+        <script type="text/javascript">
+          $('#autofill-button').click(function() {
+            $('.fillk').prop("disabled", true)
+            var url = "https://api.douban.com/v2/book/isbn/" + $('#isbn-input').val();
+            console.log(url)
+            $.get(url, "", function(data) {
+              $('#title-input').val(data.title)
+              $('#isbn-input').val(data.isbn13)
+              $('#publisher-input').val(data.publisher)
+              $('#author-input').val(data.author.join(" "))
+              $('#price-input').val(data.price.replace('元', ''))
+            }, 'json').fail(function() {
+              alert('Invalid ISBN')
+              $('#isbn-input').focus()
+              return;
+            }).always(function() {
+              $('.fillk').prop("disabled", false)
+            })
+          })
+        </script>
       </div>
     </div>
   </div>

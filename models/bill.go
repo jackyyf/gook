@@ -38,7 +38,7 @@ func (b *Bill) Create(tx *sql.Tx) (err error) {
 
 func GetBillsAfter(t time.Time) (bills []Bill, err error) {
 	rows, err := db.Query(
-		`SELECT id, amount, created, "in". FROM "bill"	WHERE created >= $1`, t)
+		`SELECT id, amount, created FROM "bill" WHERE created >= $1`, t)
 	if err != nil {
 		log.Alert("Error occured when searching bills: %s", err)
 		return

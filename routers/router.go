@@ -10,4 +10,7 @@ func init() {
 	beego.AutoRouter(&c.UserController{})
 	beego.AutoRouter(&c.BookController{})
 	beego.AutoRouter(&c.OrderInController{})
+	beego.AutoRouter(&c.OrderOutController{})
+	beego.AutoRouter(&c.BillController{})
+	beego.AutoRouter(&c.AdminController{})
 }

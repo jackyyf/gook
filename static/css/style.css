@@ -42,3 +42,13 @@ footer {
 .left5 {
 	margin-left: 5px;
 }
+
+.bill-in {
+	color: white;
+	background-color: green !important;
+}
+
+.bill-out {
+	color: white;
+	background-color: red !important;
+}

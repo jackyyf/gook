@@ -95,6 +95,7 @@ func (this *UserController) Me() {
 			this.Data["errmsg"] = fmt.Sprintf("Invalid gender: %d", gender)
 			return
 		}
+		user.Gender = int32(gender)
 		if npass != nrpass {
 			this.Data["errmsg"] = "New password doesn't match"
 			return

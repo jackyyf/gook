@@ -29,7 +29,7 @@
           <li class="active"><a href="/user/me">Welcome, {{.user.Name}}</a></li>
           <li><a href="/user/logout">Logout</a></li>
           {{if .user.IsAdmin}}
-          <li><a href="/admin/">Admin</a></li>
+          <li><a href="/admin/list">Admin</a></li>
           {{end}}
         </ul>
       </div>

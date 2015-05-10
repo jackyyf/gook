@@ -11,10 +11,6 @@ type OrderInController struct {
 	beego.Controller
 }
 
-func (c *OrderInController) Prepare() {
-	c.Data["status"] = models.Status
-}
-
 func (c *OrderInController) List() {
 	c.TplNames = "orderin/list.tpl"
 	errmsg, ok := c.GetSession("errmsg").(string)
@@ -54,7 +50,7 @@ func (c *OrderInController) Info() {
 	}
 	if order == nil {
 		c.Redirect("/orderin/list", 302)
-		c.SetSession("errmsg", fmt.Sprintf("Book ID %d does not exist!", id))
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d does not exist!", id))
 		return
 	}
 	errmsg, ok := c.GetSession("errmsg").(string)
@@ -89,7 +85,98 @@ func (c *OrderInController) Pay() {
 	}
 	if order == nil {
 		c.Redirect("/orderin/list", 302)
-		c.SetSession("errmsg", fmt.Sprintf("Book ID %d does not exist!", id))
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d does not exist!", id))
 		return
 	}
+	if order.Status != models.STAT_NEW {
+		c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d is not able to be paid", id))
+		return
+	}
+	err = order.Pay(nil)
+	if err != nil {
+		c.SetSession("errmsg", err.Error())
+	}
+	c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+
+}
+
+func (c *OrderInController) Cancel() {
+	c.TplNames = "orderin/info.tpl"
+	sid, ok := c.Ctx.Input.Params["0"]
+	id := 0
+	var err error
+	if !ok {
+		c.Redirect("/orderin/list", 302)
+		c.SetSession("errmsg", "Invalid order ID")
+		return
+	} else {
+		id, err = strconv.Atoi(sid)
+		if err != nil {
+			c.Redirect("/orderin/list", 302)
+			c.SetSession("errmsg", "Invalid order ID")
+			return
+		}
+	}
+	order, err := models.GetOrderIn(int32(id))
+	if err != nil {
+		c.Data["content"] = err.Error()
+		c.Abort("500")
+	}
+	if order == nil {
+		c.Redirect("/orderin/list", 302)
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d does not exist!", id))
+		return
+	}
+	if order.Status != models.STAT_NEW {
+		c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d is not able to be cancelled", id))
+		return
+	}
+	err = order.Cancel()
+	if err != nil {
+		c.SetSession("errmsg", err.Error())
+	}
+	c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+
+}
+
+func (c *OrderInController) Finalize() {
+	c.TplNames = "orderin/info.tpl"
+	sid, ok := c.Ctx.Input.Params["0"]
+	id := 0
+	var err error
+	if !ok {
+		c.Redirect("/orderin/list", 302)
+		c.SetSession("errmsg", "Invalid order ID")
+		return
+	} else {
+		id, err = strconv.Atoi(sid)
+		if err != nil {
+			c.Redirect("/orderin/list", 302)
+			c.SetSession("errmsg", "Invalid order ID")
+			return
+		}
+	}
+	order, err := models.GetOrderIn(int32(id))
+	if err != nil {
+		c.Data["content"] = err.Error()
+		c.Abort("500")
+	}
+	if order == nil {
+		c.Redirect("/orderin/list", 302)
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d does not exist!", id))
+		return
+	}
+	if order.Status != models.STAT_PAID {
+		c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+		c.SetSession("errmsg", fmt.Sprintf("Order ID %d is not able to be finished", id))
+		return
+	}
+	err = order.Finish()
+	if err != nil {
+		c.SetSession("errmsg", err.Error())
+	}
+	c.Redirect(fmt.Sprintf("/orderin/info/%d", id), 302)
+
 }

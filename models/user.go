@@ -148,6 +148,27 @@ func GetUserByName(name string) (ret *User, err error) {
 	return
 }
 
+func GetUsers() (ret []User, err error) {
+	rows, err := db.Query(`SELECT id, name, pwd, realname, gender, born, admin FROM "user" `)
+	if err != nil {
+		log.Alert("Error occured while getting users: %s", err)
+		return nil, err
+	}
+	ret = make([]User, 0, 30)
+	idx := 0
+	for ; rows.Next(); idx++ {
+		ret = append(ret, User{})
+		cur := &ret[idx]
+		err = rows.Scan(&cur.id, &cur.Name, &cur.hashed_pwd, &cur.RealName,
+			&cur.Gender, &cur.Born, &cur.admin)
+		if err != nil {
+			log.Alert("Error when fetching row %d: %s", idx, err)
+			return nil, err
+		}
+	}
+	return ret[:idx], nil
+}
+
 func DeleteUsers(IDs ...int32) (success_ids []int32) {
 	// Do note: nil means database error, while empty slice means no successful delete.
 	if len(IDs) == 0 {

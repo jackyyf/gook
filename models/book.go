@@ -117,7 +117,7 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 		if names != nil {
 			subphases := make([]string, 0, len(names))
 			for _, keyword := range names {
-				if utf8.RuneCountInString(keyword) <= 2 {
+				if utf8.RuneCountInString(keyword) < 2 {
 					continue
 				}
 				arg_num++
@@ -132,7 +132,7 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 		if publishers != nil {
 			subphases := make([]string, 0, len(publishers))
 			for _, keyword := range publishers {
-				if utf8.RuneCountInString(keyword) <= 2 {
+				if utf8.RuneCountInString(keyword) < 2 {
 					continue
 				}
 				arg_num++
@@ -141,7 +141,7 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 				arg_list = append(arg_list, "%"+keyword+"%")
 			}
 			if len(subphases) > 0 {
-				if where_phase != "" {
+				if where_phase == "" {
 					where_phase = " WHERE ("
 				} else {
 					where_phase += " AND ("
@@ -152,7 +152,7 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 		if authors != nil {
 			subphases := make([]string, 0, len(authors))
 			for _, keyword := range authors {
-				if utf8.RuneCountInString(keyword) <= 2 {
+				if utf8.RuneCountInString(keyword) < 2 {
 					continue
 				}
 				arg_num++
@@ -161,7 +161,7 @@ func SearchBooks(isbn_str string, names []string, publishers []string, authors [
 				arg_list = append(arg_list, "%"+keyword+"%")
 			}
 			if len(subphases) > 0 {
-				if where_phase != "" {
+				if where_phase == "" {
 					where_phase = " WHERE ("
 				} else {
 					where_phase += " AND ("
@@ -216,7 +216,7 @@ CREATE TABLE "book" (
 	publisher varchar(255) NOT NULL,
 	author varchar(255) NOT NULL,
 	price decimal(9,2) NOT NULL,
-	amount integer NOT NULL DEFAULT 0
+	amount integer NOT NULL DEFAULT 0 CHECK(amount>=0)
 );
 
 CREATE INDEX bname_idx ON "book"(name);

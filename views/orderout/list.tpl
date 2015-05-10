@@ -25,8 +25,8 @@
         <ul class="nav navbar-nav">
           <li><a href="/">Home</a></li>
           <li><a href="/book/list">Books</a></li>
-          <li class="active"><a href="/orderin/list">Buy Orders</a></li>
-          <li><a href="/orderout/list">Sell Orders</a></li>
+          <li><a href="/orderin/list">Buy Orders</a></li>
+          <li class="active"><a href="/orderout/list">Sell Orders</a></li>
           <li><a href="/bill/list">Billing</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
@@ -43,7 +43,7 @@
     <div class="col-lg-12">
       <div class="panel panel-default">
         <div class="panel-heading" style="height: 50px;">
-          Buy Orders
+          Sell Orders
         </div>
         <div class="panel-body">
           {{if .errmsg}}
@@ -61,22 +61,20 @@
                     <th style="width: 150px;">ISBN</th>
                     <th style="width: 250px;">Name</th>
                     <th style="width: 200px;">Author</th>
-                    <th style="width: 160px;">Publisher</th>
+                    <th style="width: 200px;">Publisher</th>
                     <th style="width: 80px;">Bought-in Price</th>
                     <th style="width: 80px;">Bought-in Amount</th>
-                    <th style="width: 80px;">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {{range $idx, $order := .orders}}
-                  <tr style="cursor: pointer" onclick="window.location.href='/orderin/info/{{$order.ID}}'">
+                  <tr style="cursor: pointer" onclick="window.location.href='/orderout/info/{{$order.ID}}'">
                     <td>{{$order.Book.ISBN}}</td>
                     <td>{{$order.Book.Name}}</td>
                     <td>{{$order.Book.Author}}</td>
                     <td>{{$order.Book.Publisher}}</td>
                     <td>{{printf "%.2f" $order.Price}}</td>
                     <td>{{$order.Amount}}</td>
-                    <td>{{printf "%s" $order.Status}}</td>
                   </tr>
                   {{end}}
                 </tbody>

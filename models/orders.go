@@ -94,7 +94,7 @@ func (order *OrderIn) Cancel() (err error) {
 		log.Alert(err.Error())
 		return
 	}
-	if order.Status != STAT_CANCEL {
+	if order.Status != STAT_NEW {
 		err = errors.New("Error: can't cancel paid order.")
 		log.Alert(err.Error())
 		return
@@ -131,22 +131,19 @@ func (order *OrderIn) Pay(bill *Bill) (err error) {
 	}
 	if bill == nil {
 		order.BillRef = new(Bill)
-		order.BillRef.Amount = float64(order.Amount) * order.Price
+		order.BillRef.Amount = -float64(order.Amount) * order.Price
 		err = order.BillRef.Create(tx)
 		if err != nil {
 			log.Error("Create bill failed: %s", err)
 			tx.Rollback()
 			return
 		}
-	}
-	err = bill.Create(tx)
-	if err != nil {
-		tx.Rollback()
-		return
+	} else {
+		order.BillRef = bill
 	}
 	res, err := tx.Exec(
-		`UPDATE "orderin" SET status=1, billref=$1`,
-		order.BillRef.ID())
+		`UPDATE "orderin" SET status=1, billref=$1 WHERE id=$2`,
+		order.BillRef.ID(), order.id)
 	if err != nil {
 		log.Error("Update order in failed: %s", err)
 		tx.Rollback()
@@ -180,8 +177,8 @@ func (order *OrderIn) Finish() (err error) {
 		return
 	}
 	res, err := tx.Exec(
-		`UPDATE "orderin" SET status=2`,
-		order.BillRef.ID())
+		`UPDATE "orderin" SET status=2 WHERE id=$1`,
+		order.id)
 	if err != nil {
 		log.Error("Update order in failed: %s", err)
 		tx.Rollback()
@@ -299,7 +296,8 @@ func GetOrderIns(book *Book) (ret []OrderIn, err error) {
 				log.Alert("Error when fetching row %d: %s", idx, err)
 				return nil, err
 			}
-			cur.BillRef.id = id.(int32)
+			id64 := id.(int64)
+			cur.BillRef.id = int32(id64)
 			amount, err := bamount.Value()
 			if err != nil {
 				log.Alert("Error when fetching row %d: %s", idx, err)
@@ -340,7 +338,8 @@ func GetOrderIn(id int32) (ret *OrderIn, err error) {
 			log.Alert("Error when fetching row: %s", err)
 			return nil, err
 		}
-		ret.BillRef.id = id.(int32)
+		id64 := id.(int64)
+		ret.BillRef.id = int32(id64)
 		amount, err := bamount.Value()
 		if err != nil {
 			log.Alert("Error when fetching row: %s", err)
@@ -354,8 +353,28 @@ func GetOrderIn(id int32) (ret *OrderIn, err error) {
 	return
 }
 
-func GetOrderOut(book *Book) (ret []OrderIn, err error) {
-	query := `SELECT orderout.id, orderout.book, amount, price, b.name, b.author, b.publisher, b.isbn,
+func GetOrderOut(id int32) (ret *OrderOut, err error) {
+	res := db.QueryRow(`SELECT orderout.id, orderout.book, orderout.amount, orderout.price, b.name, b.author, b.publisher, b.isbn,
+	b.price, billref, bill.amount, bill.created FROM orderout
+	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref WHERE orderout.id=$1`, id)
+	ret = new(OrderOut)
+	ret.Book = new(Book)
+	ret.BillRef = new(Bill)
+	err = res.Scan(&ret.id, &ret.Book.id, &ret.Amount, &ret.Price, &ret.Book.Name, &ret.Book.Author,
+		&ret.Book.Publisher, &ret.Book.ISBN, &ret.Book.Price, &ret.BillRef.id, &ret.BillRef.Amount, &ret.BillRef.Created)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Warn("No such order: %d", id)
+			return nil, nil
+		}
+		log.Alert("Error when fetching row: %s", err)
+		return nil, err
+	}
+	return
+}
+
+func GetOrderOuts(book *Book) (ret []OrderIn, err error) {
+	query := `SELECT orderout.id, orderout.book, orderout.amount, orderout.price, b.name, b.author, b.publisher, b.isbn,
 	b.price, billref, bill.amount, bill.created FROM orderout
 	LEFT OUTER JOIN book AS b ON book=b.id LEFT OUTER JOIN bill ON bill.id=billref`
 	if book != nil {
@@ -393,7 +412,7 @@ DROP TABLE IF EXISTS "orderout";
 
 CREATE TABLE "orderin" (
 	id serial PRIMARY KEY,
-	book integer NOT NULL UNIQUE REFERENCES book,
+	book integer NOT NULL REFERENCES book,
 	amount integer NOT NULL,
 	price decimal(9,2) NOT NULL,
 	status integer NOT NULL DEFAULT 0,
@@ -402,7 +421,7 @@ CREATE TABLE "orderin" (
 
 CREATE TABLE "orderout" (
 	id serial PRIMARY KEY,
-	book integer NOT NULL UNIQUE REFERENCES book,
+	book integer NOT NULL REFERENCES book,
 	amount integer NOT NULL,
 	price decimal(9,2) NOT NULL,
 	billref integer NOT NULL UNIQUE REFERENCES bill

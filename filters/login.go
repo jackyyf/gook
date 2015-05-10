@@ -29,6 +29,7 @@ func LoginEnforcement(ctx *context.Context) {
 	}
 	ctx.Input.Data["user"] = user
 	log.Debug("Logged in.")
+	ctx.Input.Data["status"] = models.Status
 }
 
 func AdminProtection(ctx *context.Context) {
@@ -40,5 +41,6 @@ func AdminProtection(ctx *context.Context) {
 	user, err := models.GetUser(uid)
 	if err != nil || user == nil || !user.IsAdmin() {
 		ctx.Redirect(302, "/")
+		ctx.Input.CruSession.Set("errmsg", "Admin only!")
 	}
 }

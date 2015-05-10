@@ -20,8 +20,8 @@
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <li><a href="/">Home</a></li>
-          <li class="active"><a href="/book/list">Books</a></li>
-          <li><a href="/orderin/list">Buy Orders</a></li>
+          <li><a href="/book/list">Books</a></li>
+          <li class="active"><a href="/orderin/list">Buy Orders</a></li>
           <li><a href="/orderout/list">Sell Orders</a></li>
           <li><a href="/bill/list">Billing</a></li>
         </ul>
@@ -29,7 +29,7 @@
           <li><a href="/user/me">Welcome, {{.user.Name}}</a></li>
           <li><a href="/user/logout">Logout</a></li>
           {{if .user.IsAdmin}}
-          <li><a href="/admin/">Admin</a></li>
+          <li><a href="/admin/list">Admin</a></li>
           {{end}}
         </ul>
       </div>
@@ -95,7 +95,11 @@
               </div>
               {{if compare .order.Status .status.STAT_NEW}}
               <div class="col-md-6" style="text-align: center"><a href="/orderin/pay/{{.order.ID}}" class="btn btn-info form-control">Pay</a></div>
-              <div class="col-md-6" style="text-align: center"><a href="/orderin/cancel/{{.order.ID}}" class="btn btn-info form-control">Cancel</a></div>
+              <div class="col-md-6" style="text-align: center"><a href="/orderin/cancel/{{.order.ID}}" class="btn btn-danger form-control">Cancel</a></div>
+              {{else}}
+              {{if compare .order.Status .status.STAT_PAID}}
+              <div class="col-md-12" style="text-align: center"><a href="/orderin/finalize/{{.order.ID}}" class="btn btn-info form-control">Finish</a></div>
+              {{end}}
               {{end}}
           </fieldset>
         </form>
