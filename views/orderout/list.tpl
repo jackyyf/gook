@@ -62,8 +62,8 @@
                     <th style="width: 250px;">Name</th>
                     <th style="width: 200px;">Author</th>
                     <th style="width: 200px;">Publisher</th>
-                    <th style="width: 80px;">Bought-in Price</th>
-                    <th style="width: 80px;">Bought-in Amount</th>
+                    <th style="width: 80px;">Sold Price</th>
+                    <th style="width: 80px;">Sold Amount</th>
                   </tr>
                 </thead>
                 <tbody>
