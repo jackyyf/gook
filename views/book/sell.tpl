@@ -39,7 +39,7 @@
     <div class="col-md-6 col-md-offset-3" style="margin-top: 32px;">
       <div class="login-panel panel panel-default">
         <div class="panel-heading">
-          <h3 class="panel-title" style="text-align: center;">Book Info</h3>
+          <h3 class="panel-title" style="text-align: center;">Order Info</h3>
         </div>
         <div class="panel-body">
           <form role="form" method="post" id="changeme-form">
