@@ -61,9 +61,10 @@
               <table class="table table-striped table-bordered table-hover no-footer">
                 <thead>
                   <tr rol="row">
+                    <th style="width: 100px;">ID</th>
                     <th style="width: 150px;">Username</th>
                     <th style="width: 250px;">Real Name</th>
-                    <th style="width: 200px;">Gender</th>
+                    <th style="width: 100px;">Gender</th>
                     <th style="width: 200px;">Born</th>
                     <th style="width: 80px;">Admin?</th>
                   </tr>
@@ -71,6 +72,7 @@
                 <tbody>
                   {{range $idx, $user := .users}}
                   <tr style="cursor: pointer" onclick="window.location.href='/admin/info/{{$user.ID}}'">
+					<td>{{$user.ID}}</td>
                     <td>{{$user.Name}}</td>
                     <td>{{$user.RealName}}</td>
                     <td>{{if compare $user.Gender 0}}Female{{else}}Male{{end}}</td>

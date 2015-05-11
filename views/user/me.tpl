@@ -52,7 +52,10 @@
               </div>
               {{end}}
               <div class="form-group">
-                <input class="form-control" placeholder="Username" name="username" type="user" value="{{.user.Name}}" disabled>
+                <input class="form-control" placeholder="ID" type="text" value="{{.user.ID}}" disabled>
+              </div>
+              <div class="form-group">
+                <input class="form-control" placeholder="Username" type="user" value="{{.user.Name}}" disabled>
               </div>
               <div class="form-group">
                 <input class="form-control" placeholder="Current Password" name="password" type="password" value="">

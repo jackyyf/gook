@@ -107,6 +107,7 @@ func (this *AdminController) Info() {
 		}
 		nuser.Gender = int32(gender)
 		nuser.Save()
+		this.Redirect(fmt.Sprintf("/admin/info/%d", nuser.ID()), 302)
 	}
 }
 
