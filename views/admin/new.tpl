@@ -67,7 +67,7 @@
                   </select>
               </div>
               <div class="form-group" style="color: black">
-                <input class="form-control" placeholder="Realname" name="born" type="user" value='' id="born">
+                <input class="form-control" placeholder="Born" name="born" type="user" value='' id="born">
                 <script type="text/javascript">
                   $('#born').datepicker({
                     format: 'yyyy-mm-dd'
